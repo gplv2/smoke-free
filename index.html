@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1419">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Smoke-free">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Smoke-Free Tracker</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2129;
+    --panel2: #222c36;
+    --accent: #4ade80;
+    --accent-dim: #2a6b46;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --warn: #f0b429;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.4rem; font-weight: 650; margin-bottom: 2px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
+
+  .clock {
+    background: linear-gradient(160deg, var(--panel2), var(--panel));
+    border: 1px solid #2c3742;
+    border-radius: 16px;
+    padding: 22px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .clock .label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 8px 0 2px;
+  }
+  .timer .unit { font-size: 1rem; color: var(--muted); font-weight: 500; margin: 0 6px 0 1px; }
+  .quit-since { color: var(--muted); font-size: 0.8rem; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat {
+    background: var(--panel);
+    border: 1px solid #2c3742;
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .stat .k { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat .v { font-size: 1.5rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .stat .v.money { color: var(--accent); }
+  .stat .v.cigs { color: var(--warn); }
+
+  .section-title { font-size: 0.95rem; font-weight: 600; margin: 18px 0 10px; }
+
+  .milestone {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel);
+    border: 1px solid #2c3742;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    opacity: 0.55;
+    transition: opacity 0.3s;
+  }
+  .milestone.done { opacity: 1; border-color: var(--accent-dim); }
+  .milestone .icon {
+    width: 26px; height: 26px; flex-shrink: 0;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 0.85rem;
+    background: #2c3742; color: var(--muted);
+  }
+  .milestone.done .icon { background: var(--accent); color: #0f1419; }
+  .milestone .body { flex: 1; }
+  .milestone .body .t { font-weight: 600; font-size: 0.9rem; }
+  .milestone .body .d { color: var(--muted); font-size: 0.8rem; }
+  .milestone .when { color: var(--muted); font-size: 0.75rem; text-align: right; white-space: nowrap; }
+  .milestone .progress {
+    height: 4px; background: #2c3742; border-radius: 2px; margin-top: 6px; overflow: hidden;
+  }
+  .milestone .progress > div { height: 100%; background: var(--accent); border-radius: 2px; }
+
+  .settings {
+    background: var(--panel); border: 1px solid #2c3742; border-radius: 14px;
+    padding: 16px; margin-top: 18px;
+  }
+  .settings summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+  .field { margin-top: 12px; }
+  .field label { display: block; color: var(--muted); font-size: 0.8rem; margin-bottom: 4px; }
+  .field input {
+    width: 100%; background: var(--bg); border: 1px solid #2c3742; border-radius: 8px;
+    padding: 9px 11px; color: var(--text); font-size: 0.95rem; font-family: inherit;
+  }
+  .btn {
+    margin-top: 14px; background: var(--accent); color: #0f1419; border: none;
+    border-radius: 8px; padding: 10px 16px; font-weight: 650; font-size: 0.9rem; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn.ghost { background: transparent; color: var(--muted); border: 1px solid #2c3742; margin-left: 8px; }
+  .note { color: var(--muted); font-size: 0.78rem; margin-top: 12px; }
+  .saved-flash { color: var(--accent); font-size: 0.8rem; margin-left: 10px; opacity: 0; transition: opacity 0.2s; }
+  .saved-flash.show { opacity: 1; }
+</style>
+</head>
+<body>
+  <h1>Smoke-free</h1>
+  <div class="sub" id="encourage">Loading…</div>
+
+  <div class="clock">
+    <div class="label">Time since last cigarette</div>
+    <div class="timer" id="timer">—</div>
+    <div class="quit-since" id="quitSince"></div>
+  </div>
+
+  <div class="grid">
+    <div class="stat">
+      <div class="k">Money saved</div>
+      <div class="v money" id="money">—</div>
+    </div>
+    <div class="stat">
+      <div class="k">Cigarettes not smoked</div>
+      <div class="v cigs" id="cigs">—</div>
+    </div>
+  </div>
+
+  <div class="section-title">Health recovered</div>
+  <div id="milestones"></div>
+
+  <details class="settings">
+    <summary>Settings</summary>
+    <div class="field">
+      <label>Quit date & time</label>
+      <input type="datetime-local" id="quitInput">
+    </div>
+    <div class="field">
+      <label>Cigarettes per day (before)</label>
+      <input type="number" id="perDayInput" min="1" step="1">
+    </div>
+    <div class="field">
+      <label>Price per pack (€)</label>
+      <input type="number" id="packPriceInput" min="0" step="0.01">
+    </div>
+    <div class="field">
+      <label>Cigarettes per pack</label>
+      <input type="number" id="packSizeInput" min="1" step="1">
+    </div>
+    <div>
+      <button class="btn" id="saveBtn">Save</button>
+      <button class="btn ghost" id="resetBtn">Reset quit time to now</button>
+      <span class="saved-flash" id="savedFlash">saved ✓</span>
+    </div>
+    <div class="note">Settings are stored in this browser and persist between visits.</div>
+  </details>
+
+<script>
+const DEFAULTS = {
+  quitISO: "2026-06-10T14:00",
+  perDay: 20,
+  packPrice: 13,
+  packSize: 20
+};
+
+const KEY = "smokefree:settings";
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
+  } catch (e) { /* corrupt or unavailable */ }
+  saveSettings(DEFAULTS, true);
+  return { ...DEFAULTS };
+}
+
+function saveSettings(s, silent) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+    if (!silent) {
+      const f = document.getElementById("savedFlash");
+      f.classList.add("show");
+      setTimeout(() => f.classList.remove("show"), 1500);
+    }
+  } catch (e) { console.error("save failed", e); }
+}
+
+let settings = null;
+
+const MILESTONES = [
+  { ms: 20*60e3,            t: "Heart rate normalises",       d: "Blood pressure and pulse drop back toward normal." },
+  { ms: 8*3600e3,          t: "Oxygen recovers",             d: "Carbon monoxide halves; oxygen levels climb." },
+  { ms: 24*3600e3,         t: "Carbon monoxide cleared",     d: "CO is gone; lungs start clearing debris." },
+  { ms: 48*3600e3,         t: "Taste & smell return",        d: "Nerve endings start regrowing." },
+  { ms: 72*3600e3,         t: "Breathing easier",            d: "Bronchial tubes relax; energy rises." },
+  { ms: 14*24*3600e3,      t: "Circulation improves",        d: "Walking and exercise get noticeably easier." },
+  { ms: 90*24*3600e3,      t: "Lung function up to +10%",    d: "Coughing and shortness of breath decline." },
+  { ms: 365*24*3600e3,     t: "Heart disease risk halved",   d: "Risk of coronary heart disease is half a smoker's." },
+];
+
+function fmtDuration(ms) {
+  const s = Math.floor(ms/1000);
+  const days = Math.floor(s/86400);
+  const hrs = Math.floor((s%86400)/3600);
+  const mins = Math.floor((s%3600)/60);
+  const secs = s%60;
+  return { days, hrs, mins, secs };
+}
+
+function fmtWhen(ms) {
+  const d = Math.floor(ms/86400e3);
+  if (d >= 1) return d + (d===1?" day":" days");
+  const h = Math.floor(ms/3600e3);
+  if (h >= 1) return h + "h";
+  const m = Math.floor(ms/60e3);
+  return m + "m";
+}
+
+const encouragements = [
+  "One breath at a time. You're doing it.",
+  "Every hour is a small win. Keep going.",
+  "Your body is busy repairing itself right now.",
+  "The craving passes. You don't have to.",
+  "Money in your pocket, air in your lungs."
+];
+
+function render() {
+  if (!settings) return;
+  const quit = new Date(settings.quitISO);
+  const now = new Date();
+  const elapsed = Math.max(0, now - quit);
+
+  const { days, hrs, mins, secs } = fmtDuration(elapsed);
+  document.getElementById("timer").innerHTML =
+    `${days}<span class="unit">d</span>${hrs}<span class="unit">h</span>${mins}<span class="unit">m</span>${secs}<span class="unit">s</span>`;
+  document.getElementById("quitSince").textContent =
+    "Since " + quit.toLocaleString([], {weekday:"short", day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"});
+
+  const perMs = settings.perDay / 86400e3;
+  const cigsAvoided = elapsed * perMs;
+  const costPerCig = settings.packPrice / settings.packSize;
+  const money = cigsAvoided * costPerCig;
+
+  document.getElementById("money").textContent = "€" + money.toFixed(2);
+  document.getElementById("cigs").textContent = Math.floor(cigsAvoided).toLocaleString();
+
+  document.getElementById("encourage").textContent =
+    encouragements[Math.floor(elapsed/3600e3) % encouragements.length];
+
+  const wrap = document.getElementById("milestones");
+  wrap.innerHTML = "";
+  MILESTONES.forEach(m => {
+    const done = elapsed >= m.ms;
+    const pct = Math.min(100, (elapsed/m.ms)*100);
+    const el = document.createElement("div");
+    el.className = "milestone" + (done ? " done" : "");
+    el.innerHTML = `
+      <div class="icon">${done ? "✓" : ""}</div>
+      <div class="body">
+        <div class="t">${m.t}</div>
+        <div class="d">${m.d}</div>
+        ${done ? "" : `<div class="progress"><div style="width:${pct}%"></div></div>`}
+      </div>
+      <div class="when">${done ? "done" : "at " + fmtWhen(m.ms)}</div>
+    `;
+    wrap.appendChild(el);
+  });
+}
+
+function fillForm() {
+  document.getElementById("quitInput").value = settings.quitISO;
+  document.getElementById("perDayInput").value = settings.perDay;
+  document.getElementById("packPriceInput").value = settings.packPrice;
+  document.getElementById("packSizeInput").value = settings.packSize;
+}
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+  settings = {
+    quitISO: document.getElementById("quitInput").value || settings.quitISO,
+    perDay: parseFloat(document.getElementById("perDayInput").value) || settings.perDay,
+    packPrice: parseFloat(document.getElementById("packPriceInput").value) || settings.packPrice,
+    packSize: parseFloat(document.getElementById("packSizeInput").value) || settings.packSize,
+  };
+  saveSettings(settings);
+  render();
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const local = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  settings.quitISO = local;
+  saveSettings(settings);
+  fillForm();
+  render();
+});
+
+settings = loadSettings();
+fillForm();
+render();
+setInterval(render, 1000);
+</script>
+</body>
+</html>
