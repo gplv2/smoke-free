@@ -68,7 +68,6 @@
   .section-title { font-size: 0.95rem; font-weight: 600; margin: 18px 0 10px; }
 
   .milestone {
-    display: flex; align-items: center; gap: 12px;
     background: var(--panel);
     border: 1px solid #2c3742;
     border-radius: 12px;
@@ -78,6 +77,23 @@
     transition: opacity 0.3s;
   }
   .milestone.done { opacity: 1; border-color: var(--accent-dim); }
+  .milestone > summary {
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; list-style: none;
+  }
+  .milestone > summary::-webkit-details-marker { display: none; }
+  .milestone .chev {
+    color: var(--muted); font-size: 0.7rem; flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .milestone[open] .chev { transform: rotate(180deg); }
+  .milestone .ms-info {
+    color: var(--muted); font-size: 0.82rem; line-height: 1.55;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid #2c3742;
+  }
+  .milestone .ms-info .src {
+    display: block; margin-top: 6px; color: var(--accent); font-size: 0.75rem;
+  }
   .milestone .icon {
     width: 26px; height: 26px; flex-shrink: 0;
     border-radius: 50%;
@@ -200,23 +216,57 @@ function saveSettings(s, silent) {
 let settings = null;
 
 const MILESTONES = [
-  { ms: 20*60e3,           t: "Heart rate & blood pressure drop", d: "Pulse and blood pressure fall back toward normal levels." },
-  { ms: 8*3600e3,          t: "Carbon monoxide halves",      d: "Blood carbon monoxide drops by half and oxygen levels climb." },
-  { ms: 12*3600e3,         t: "Blood oxygen back to normal", d: "Carbon monoxide clears, so red blood cells carry full oxygen again." },
-  { ms: 24*3600e3,         t: "Heart-attack risk starts dropping", d: "Blood gets less sticky; the early drop in heart-attack risk begins." },
-  { ms: 48*3600e3,         t: "Taste & smell sharpen",       d: "No nicotine left in the body; nerve endings regrow and food tastes better." },
-  { ms: 72*3600e3,         t: "Breathing gets easier",       d: "Bronchial tubes relax and lung capacity rises; energy climbs." },
-  { ms: 7*24*3600e3,       t: "Nicotine marker clearing",    d: "Cotinine, the marker a blood or urine test detects, is nearly gone; taste and smell stronger." },
-  { ms: 14*24*3600e3,      t: "Circulation improves",        d: "Walking and exercise get noticeably easier as blood flow improves." },
-  { ms: 30*24*3600e3,      t: "Lungs self-cleaning returns", d: "Cilia regrow and start sweeping mucus and bacteria out; less coughing." },
-  { ms: 90*24*3600e3,      t: "Lung function up to +10%",    d: "Lung function measurably improves; coughing and shortness of breath decline." },
-  { ms: 182*24*3600e3,     t: "Coughing & mucus drop",       d: "Daily cough eases and many handle stress without a cigarette." },
-  { ms: 273*24*3600e3,     t: "Lungs significantly healed",  d: "Cilia have largely recovered; shortness of breath, congestion and fatigue decrease." },
-  { ms: 365*24*3600e3,     t: "Heart disease risk halved",   d: "Risk of coronary heart disease is about half that of a smoker." },
-  { ms: 2*365*24*3600e3,   t: "Stroke risk falling",         d: "Stroke risk drops toward that of a non-smoker." },
-  { ms: 5*365*24*3600e3,   t: "Several cancer risks halved", d: "Risk of mouth, throat, esophagus and bladder cancer is cut in half." },
-  { ms: 10*365*24*3600e3,  t: "Lung cancer risk halved",     d: "Risk of dying from lung cancer is about half that of a smoker." },
-  { ms: 15*365*24*3600e3,  t: "Heart risk like a never-smoker", d: "Risk of coronary heart disease is close to that of someone who never smoked." },
+  { ms: 20*60e3,           t: "Heart rate & blood pressure drop", d: "Pulse and blood pressure fall back toward normal levels.",
+    info: "Nicotine is a stimulant: it drives the release of adrenaline, which speeds the heart and tightens blood vessels. As the last dose wears off that pressure on your cardiovascular system lifts — within about 20 minutes heart rate and blood pressure begin easing toward your baseline, and blood flow to the hands and feet improves.",
+    src: "European Society of Cardiology" },
+  { ms: 8*3600e3,          t: "Carbon monoxide halves",      d: "Blood carbon monoxide drops by half and oxygen levels climb.",
+    info: "Smoke is full of carbon monoxide, which binds to haemoglobin roughly 200× more tightly than oxygen, forming carboxyhaemoglobin and starving tissues of oxygen. CO has a half-life of about 4–6 hours, so by around 8 hours smoke-free it has fallen by about half and your blood starts carrying more oxygen again.",
+    src: "European Respiratory Society" },
+  { ms: 12*3600e3,         t: "Blood oxygen back to normal", d: "Carbon monoxide clears, so red blood cells carry full oxygen again.",
+    info: "As carboxyhaemoglobin keeps dropping, haemoglobin is freed to do its real job, and blood-oxygen saturation returns to a non-smoker's range within roughly half a day. Muscles and organs receive a fuller oxygen supply, which is why early light-headedness and breathlessness start to ease.",
+    src: "World Health Organization" },
+  { ms: 24*3600e3,         t: "Heart-attack risk starts dropping", d: "Blood gets less sticky; the early drop in heart-attack risk begins.",
+    info: "Smoking makes platelets stickier and raises fibrinogen, encouraging clots to form in narrowed arteries — the trigger for most heart attacks. Within a day of stopping, platelet activity and clotting tendency begin to normalise, and population studies show acute coronary risk starts falling almost immediately.",
+    src: "European Heart Journal (ESC)" },
+  { ms: 48*3600e3,         t: "Taste & smell sharpen",       d: "No nicotine left in the body; nerve endings regrow and food tastes better.",
+    info: "Tobacco smoke blunts and damages the olfactory receptors in the nose and the taste buds on the tongue. With nicotine now fully eliminated, these nerve endings begin regenerating; within a couple of days many people notice food and smells becoming distinctly more vivid.",
+    src: "European Respiratory Society" },
+  { ms: 72*3600e3,         t: "Breathing gets easier",       d: "Bronchial tubes relax and lung capacity rises; energy climbs.",
+    info: "Nicotine and smoke irritants keep the bronchi constricted. By around three days, with nicotine cleared, the bronchial tubes relax and airway resistance drops, so air moves more freely and usable lung capacity rises. Better oxygen delivery is why many feel a noticeable lift in energy around now.",
+    src: "NHS" },
+  { ms: 7*24*3600e3,       t: "Nicotine marker clearing",    d: "Cotinine, the marker a blood or urine test detects, is nearly gone; taste and smell stronger.",
+    info: "Clinicians rarely measure nicotine itself (gone within 1–2 days) — they test for cotinine, its longer-lived metabolite with a half-life near 16 hours. After about a week off tobacco, cotinine in blood, urine and saliva has fallen close to non-smoker levels, the objective marker labs use to confirm you've stopped.",
+    src: "Karolinska Institutet / WHO" },
+  { ms: 14*24*3600e3,      t: "Circulation improves",        d: "Walking and exercise get noticeably easier as blood flow improves.",
+    info: "Beyond the early relaxation of blood vessels, the endothelium — the inner lining that lets arteries widen on demand — starts recovering its function, and circulation to the limbs and skin measurably improves over the first weeks. Walking, stairs and exercise begin to feel easier.",
+    src: "European Society of Cardiology" },
+  { ms: 30*24*3600e3,      t: "Lungs self-cleaning returns", d: "Cilia regrow and start sweeping mucus and bacteria out; less coughing.",
+    info: "The airways are lined with cilia — microscopic hair-like sweepers that smoking paralyses and destroys. Within weeks they regrow and resume clearing mucus, dust and microbes from the lungs. A short-lived increase in coughing can actually be a sign this clean-up is restarting.",
+    src: "European Respiratory Society" },
+  { ms: 90*24*3600e3,      t: "Lung function up to +10%",    d: "Lung function measurably improves; coughing and shortness of breath decline.",
+    info: "With airways less inflamed and cilia working again, measurable lung function — such as FEV1, the volume you can force out in one second — can improve by up to around 10% over the first one to three months. Breathlessness during exertion noticeably declines.",
+    src: "European Respiratory Society" },
+  { ms: 182*24*3600e3,     t: "Coughing & mucus drop",       d: "Daily cough eases and many handle stress without a cigarette.",
+    info: "Chronic mucus over-production and the smoker's cough subside as airway inflammation continues to settle, and lower airway irritation means fewer respiratory infections. By now the body has largely adapted to life without nicotine, and many report steadier mood and better sleep.",
+    src: "WHO Regional Office for Europe" },
+  { ms: 273*24*3600e3,     t: "Lungs significantly healed",  d: "Cilia have largely recovered; shortness of breath, congestion and fatigue decrease.",
+    info: "By around nine months the cilia have largely regrown and the lungs' self-cleaning is close to normal, so coughing, sinus congestion, shortness of breath and fatigue are markedly reduced. The lungs' natural defences against infection are substantially restored.",
+    src: "European Respiratory Society" },
+  { ms: 365*24*3600e3,     t: "Heart disease risk halved",   d: "Risk of coronary heart disease is about half that of a smoker.",
+    info: "After one smoke-free year your excess risk of coronary heart disease is roughly half that of someone who kept smoking. Improvements in cholesterol balance, blood-vessel function and reduced clotting all feed into this drop.",
+    src: "European Society of Cardiology" },
+  { ms: 2*365*24*3600e3,   t: "Stroke risk falling",         d: "Stroke risk drops toward that of a non-smoker.",
+    info: "Lower clotting tendency and healthier arteries steadily reduce stroke risk. European cohort studies show it falling substantially in the years after quitting, moving toward the level of someone who never smoked.",
+    src: "European Stroke Organisation" },
+  { ms: 5*365*24*3600e3,   t: "Several cancer risks halved", d: "Risk of mouth, throat, esophagus and bladder cancer is cut in half.",
+    info: "As the lining of the mouth, throat, oesophagus and bladder repairs itself and sheds smoke-damaged cells, the risk of cancers at these sites falls to about half that of a continuing smoker within roughly five years.",
+    src: "European Code Against Cancer (IARC/WHO)" },
+  { ms: 10*365*24*3600e3,  t: "Lung cancer risk halved",     d: "Risk of dying from lung cancer is about half that of a smoker.",
+    info: "Around ten years on, the risk of dying from lung cancer is about half that of a continuing smoker, and the risk of cancers of the larynx and pancreas also declines. The landmark British Doctors Study found that stopping — especially before middle age — recovers most of the life expectancy smoking would have cost.",
+    src: "British Doctors Study (Doll & Peto) / IARC" },
+  { ms: 15*365*24*3600e3,  t: "Heart risk like a never-smoker", d: "Risk of coronary heart disease is close to that of someone who never smoked.",
+    info: "After about fifteen years smoke-free, the risk of coronary heart disease approaches that of a person who never smoked — by this point the cardiovascular system has largely recovered from the damage.",
+    src: "European Society of Cardiology / WHO" },
 ];
 
 function fmtDuration(ms) {
@@ -274,8 +324,12 @@ function render() {
     encouragements[Math.floor(elapsed/3600e3) % encouragements.length];
 
   const wrap = document.getElementById("milestones");
+  const openIdx = new Set(
+    [...wrap.querySelectorAll("details.milestone")]
+      .map((d, i) => (d.open ? i : -1)).filter(i => i >= 0)
+  );
   wrap.innerHTML = "";
-  MILESTONES.forEach(m => {
+  MILESTONES.forEach((m, i) => {
     const done = elapsed >= m.ms;
     const pct = Math.min(100, (elapsed/m.ms)*100);
     let whenText;
@@ -287,16 +341,21 @@ function render() {
     } else {
       whenText = "at " + fmtWhen(m.ms);
     }
-    const el = document.createElement("div");
+    const el = document.createElement("details");
     el.className = "milestone" + (done ? " done" : "");
+    if (openIdx.has(i)) el.open = true;
     el.innerHTML = `
-      <div class="icon">${done ? "✓" : ""}</div>
-      <div class="body">
-        <div class="t">${m.t}</div>
-        <div class="d">${m.d}</div>
-        ${done ? "" : `<div class="progress"><div style="width:${pct}%"></div></div>`}
-      </div>
-      <div class="when">${whenText}</div>
+      <summary>
+        <div class="icon">${done ? "✓" : ""}</div>
+        <div class="body">
+          <div class="t">${m.t}</div>
+          <div class="d">${m.d}</div>
+          ${done ? "" : `<div class="progress"><div style="width:${pct}%"></div></div>`}
+        </div>
+        <div class="when">${whenText}</div>
+        <span class="chev">▾</span>
+      </summary>
+      <div class="ms-info">${m.info}<span class="src">— ${m.src}</span></div>
     `;
     wrap.appendChild(el);
   });
