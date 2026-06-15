@@ -200,14 +200,23 @@ function saveSettings(s, silent) {
 let settings = null;
 
 const MILESTONES = [
-  { ms: 20*60e3,            t: "Heart rate normalises",       d: "Blood pressure and pulse drop back toward normal." },
-  { ms: 8*3600e3,          t: "Oxygen recovers",             d: "Carbon monoxide halves; oxygen levels climb." },
-  { ms: 24*3600e3,         t: "Carbon monoxide cleared",     d: "CO is gone; lungs start clearing debris." },
-  { ms: 48*3600e3,         t: "Taste & smell return",        d: "Nerve endings start regrowing." },
-  { ms: 72*3600e3,         t: "Breathing easier",            d: "Bronchial tubes relax; energy rises." },
-  { ms: 14*24*3600e3,      t: "Circulation improves",        d: "Walking and exercise get noticeably easier." },
-  { ms: 90*24*3600e3,      t: "Lung function up to +10%",    d: "Coughing and shortness of breath decline." },
-  { ms: 365*24*3600e3,     t: "Heart disease risk halved",   d: "Risk of coronary heart disease is half a smoker's." },
+  { ms: 20*60e3,           t: "Heart rate & blood pressure drop", d: "Pulse and blood pressure fall back toward normal levels." },
+  { ms: 8*3600e3,          t: "Carbon monoxide halves",      d: "Blood carbon monoxide drops by half and oxygen levels climb." },
+  { ms: 12*3600e3,         t: "Blood oxygen back to normal", d: "Carbon monoxide clears, so red blood cells carry full oxygen again." },
+  { ms: 24*3600e3,         t: "Heart-attack risk starts dropping", d: "Blood gets less sticky; the early drop in heart-attack risk begins." },
+  { ms: 48*3600e3,         t: "Taste & smell sharpen",       d: "No nicotine left in the body; nerve endings regrow and food tastes better." },
+  { ms: 72*3600e3,         t: "Breathing gets easier",       d: "Bronchial tubes relax and lung capacity rises; energy climbs." },
+  { ms: 7*24*3600e3,       t: "Nicotine marker clearing",    d: "Cotinine, the marker a blood or urine test detects, is nearly gone; taste and smell stronger." },
+  { ms: 14*24*3600e3,      t: "Circulation improves",        d: "Walking and exercise get noticeably easier as blood flow improves." },
+  { ms: 30*24*3600e3,      t: "Lungs self-cleaning returns", d: "Cilia regrow and start sweeping mucus and bacteria out; less coughing." },
+  { ms: 90*24*3600e3,      t: "Lung function up to +10%",    d: "Lung function measurably improves; coughing and shortness of breath decline." },
+  { ms: 182*24*3600e3,     t: "Coughing & mucus drop",       d: "Daily cough eases and many handle stress without a cigarette." },
+  { ms: 273*24*3600e3,     t: "Lungs significantly healed",  d: "Cilia have largely recovered; shortness of breath, congestion and fatigue decrease." },
+  { ms: 365*24*3600e3,     t: "Heart disease risk halved",   d: "Risk of coronary heart disease is about half that of a smoker." },
+  { ms: 2*365*24*3600e3,   t: "Stroke risk falling",         d: "Stroke risk drops toward that of a non-smoker." },
+  { ms: 5*365*24*3600e3,   t: "Several cancer risks halved", d: "Risk of mouth, throat, esophagus and bladder cancer is cut in half." },
+  { ms: 10*365*24*3600e3,  t: "Lung cancer risk halved",     d: "Risk of dying from lung cancer is about half that of a smoker." },
+  { ms: 15*365*24*3600e3,  t: "Heart risk like a never-smoker", d: "Risk of coronary heart disease is close to that of someone who never smoked." },
 ];
 
 function fmtDuration(ms) {
@@ -220,12 +229,17 @@ function fmtDuration(ms) {
 }
 
 function fmtWhen(ms) {
-  const d = Math.floor(ms/86400e3);
-  if (d >= 1) return d + (d===1?" day":" days");
-  const h = Math.floor(ms/3600e3);
-  if (h >= 1) return h + "h";
   const m = Math.floor(ms/60e3);
-  return m + "m";
+  if (m < 60) return m + "m";
+  const h = Math.floor(ms/3600e3);
+  if (h < 24) return h + "h";
+  const d = Math.floor(ms/86400e3);
+  if (d < 7) return d + (d===1?" day":" days");
+  if (d < 28) { const w = Math.round(d/7); return w + (w===1?" week":" weeks"); }
+  const mo = Math.round(ms/(30.44*86400e3));
+  if (mo < 12) return mo + (mo===1?" month":" months");
+  const y = Math.round(ms/(365*86400e3));
+  return y + (y===1?" year":" years");
 }
 
 const encouragements = [
