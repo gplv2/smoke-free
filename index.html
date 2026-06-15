@@ -278,6 +278,15 @@ function render() {
   MILESTONES.forEach(m => {
     const done = elapsed >= m.ms;
     const pct = Math.min(100, (elapsed/m.ms)*100);
+    let whenText;
+    if (done) {
+      const reached = new Date(quit.getTime() + m.ms);
+      whenText = reached.getFullYear() === now.getFullYear()
+        ? reached.toLocaleString([], {day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"})
+        : reached.toLocaleDateString([], {day:"2-digit", month:"short", year:"numeric"});
+    } else {
+      whenText = "at " + fmtWhen(m.ms);
+    }
     const el = document.createElement("div");
     el.className = "milestone" + (done ? " done" : "");
     el.innerHTML = `
@@ -287,7 +296,7 @@ function render() {
         <div class="d">${m.d}</div>
         ${done ? "" : `<div class="progress"><div style="width:${pct}%"></div></div>`}
       </div>
-      <div class="when">${done ? "done" : "at " + fmtWhen(m.ms)}</div>
+      <div class="when">${whenText}</div>
     `;
     wrap.appendChild(el);
   });
